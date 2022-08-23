@@ -290,6 +290,40 @@ jobs:
             workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
             event: on_fail
 
+  deploy-backend:
+      docker:
+        - image: python:3.7-alpine3.11
+      steps:
+        - checkout
+        - add_ssh_keys:
+            fingerprints: [ "d5:c0:bc:1e:6b:98:ef:87:b7:4d:80:7a:39:16:88:1e" ]
+        - attach_workspace:
+            at: ~/
+        - run:
+            name: Install dependencies
+            command: |
+              apk add --update curl nodejs npm ansible zip
+              pip install awscli
+        - run:
+            name: Deploy backend
+            command: |
+              cd backend
+              npm i
+              npm run build
+              cd ..
+              tar -C backend -czvf artifact.tar.gz .
+              cp ./artifact.tar.gz  .circleci/ansible/roles/deploy/files
+              cd .circleci/ansible
+              echo "Contents  of the inventory.txt file is -------"
+              cat inventory.txt
+              ansible-playbook -i inventory.txt deploy-backend.yml
+        - destroy-environment:
+            workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
+            event: on_fail
+        - revert-migrations:
+            workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
+            event: on_fail
+
 workflows:
   default:
     jobs:
@@ -310,4 +344,6 @@ workflows:
       - run-migrations:
           requires: [ configure-infrastructure ]
       - deploy-frontend:
+          requires: [ run-migrations ]
+      - deploy-backend:
           requires: [ run-migrations ]
