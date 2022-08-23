@@ -52,6 +52,15 @@ commands:
               unzip awscliv2.zip
               sudo ./aws/install
 
+  node-js:
+      description: for install Node.js 13
+      steps:
+        - run:
+            name: Node.js 13
+            command: |
+              curl fsSL https://deb.nodesource.com/setup_13.x | sudo -E bash -
+              sudo apt-get install -y node.js
+
 jobs:
   build-frontend:
     environment:
