@@ -42,6 +42,16 @@ commands:
                 npm run migration:revert
               fi
 
+  aws-cli:
+      description: commend for installing aws
+      steps:
+        - run:
+            name: Install aws cli
+            command: |
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              sudo ./aws/install
+
 jobs:
   build-frontend:
     environment:
@@ -290,5 +300,3 @@ workflows:
           requires: [deploy-infrastructure]
       - run-migrations:
           requires: [ configure-infrastructure ]
-      - deploy-frontend:
-          requires: [ run-migrations ]
