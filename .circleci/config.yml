@@ -43,7 +43,7 @@ commands:
               fi
 
   aws-cli:
-      description: commend for installing aws
+      description: Install aws cli command
       steps:
         - run:
             name: Install aws cli
@@ -53,13 +53,25 @@ commands:
               sudo ./aws/install
 
   node-js:
-      description: for install Node.js 13
+      description: Install Node.js 13 command
       steps:
         - run:
             name: Node.js 13
             command: |
               curl fsSL https://deb.nodesource.com/setup_13.x | sudo -E bash -
               sudo apt-get install -y node.js
+
+  install_ansible:
+        description: Install Ansible latest command
+        steps:
+          - run:
+              name: Install Ansible latest
+              command: |
+                sudo apt update
+                sudo apt install software-properties-common
+                sudo add-apt-repository --yes --update ppa:ansible/ansible
+                sudo apt install ansible
+                sudo apt install ansible -y
 
 jobs:
   build-frontend:
@@ -295,15 +307,17 @@ jobs:
         - image: python:3.7-alpine3.11
       steps:
         - checkout
-        - add_ssh_keys:
-            fingerprints: [ "d5:c0:bc:1e:6b:98:ef:87:b7:4d:80:7a:39:16:88:1e" ]
-        - attach_workspace:
-            at: ~/
         - run:
             name: Install dependencies
             command: |
               apk add --update curl nodejs npm ansible zip
               pip install awscli
+        - add_ssh_keys:
+            fingerprints: ["d5:c0:bc:1e:6b:98:ef:87:b7:4d:80:7a:39:16:88:1e"]
+        - attach_workspace:
+            at: ~/
+        - restore_cache:
+            keys: [backend-build]
         - run:
             name: Deploy backend
             command: |
@@ -313,15 +327,14 @@ jobs:
               cd ..
               tar -C backend -czvf artifact.tar.gz .
               cp ./artifact.tar.gz  .circleci/ansible/roles/deploy/files
+            
               cd .circleci/ansible
               cat inventory.txt
               ansible-playbook -i inventory.txt deploy-backend.yml
         - destroy-environment:
             workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
-            event: on_fail
         - revert-migrations:
-            workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
-            event: on_fail
+            workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
 
 workflows:
   default:
@@ -344,3 +357,5 @@ workflows:
           requires: [ configure-infrastructure ]
       - deploy-frontend:
           requires: [ run-migrations ]
+      - deploy-backend:
+          requires: [run-migrations]
