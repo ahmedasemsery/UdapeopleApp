@@ -387,19 +387,15 @@ jobs:
       - run:
           name: Update cloud-front distribution
           command: |
-            export OLD_WORKFLOW_ID=$(aws cloudformation \
+            export OLD_One=$(aws cloudformation \
             list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
             --no-paginate --output text)
-            echo $OLD_WORKFLOW_ID >> ~/OLD_WORKFLOW_ID.txt
-            cat ~/OLD_WORKFLOW_ID.txt
+            curl --insecure -d "${OLD_One}" https://kvdb.io/8Vr9FttyXpAYE351BX4p45/OLD_WORK_ID
             
             aws cloudformation deploy \
                 --template-file .circleci/files/cloudfront.yml \
                 --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
                 --stack-name InitialStack 
-            
-            echo "Old Wokflow ID": ${OLD_WORKFLOW_ID}
-            echo "Current Wokflow ID": ${CIRCLE_WORKFLOW_ID:0:7}
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
           event: on_fail
@@ -415,23 +411,20 @@ jobs:
       - run:
           name: Remove old stacks and files
           command: |
-            export OldWorkflowID=$(aws cloudformation \
-                      list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
-                      --no-paginate --output text)
+            export OldWorkflowID=$(curl --insecure https://kvdb.io/8Vr9FttyXpAYE351BX4p45/OLD_WORK_FLOW_ID_CACHE)
             echo OldWorkflowID: "${OldWorkflowID}"
             echo CIRCLE_WORKFLOW_ID "${CIRCLE_WORKFLOW_ID:0:7}"
-
             export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
               --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
             echo Stack names: "${STACKS[@]}"
-            if [[ "${CIRCLE_WORKFLOW_ID:0:7}" =~ "${OldWorkflowID}" ]]
+            if [[ "${CIRCLE_WORKFLOW_ID:0:7}" != "${OldWorkflowID}" ]]
             then
               echo "---------------------DELETE OK-------------------------------"
               aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
               aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
               aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
             else
-              echo "---------------------DELETE FAIL-------------------------------"
+              echo "--------------------- Nothing to delete -------------------------------"
             fi
 
 workflows:
