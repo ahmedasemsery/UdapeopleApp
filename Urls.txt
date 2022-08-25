@@ -2,7 +2,7 @@ URL01
 https://github.com/ahmedasemsery/UdapeopleApp.git
 
 URL02
-http://udapeople-f501def.s3-website-us-east-1.amazonaws.com/#/employees
+http://udapeople-0270251.s3-website-us-east-1.amazonaws.com/#/employees
 
 URL03
 d3gn1sttchcw6q.cloudfront.net
